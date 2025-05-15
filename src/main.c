@@ -23,6 +23,7 @@ struct chip8 {
 	unsigned char regs[REGISTERS_AMOUNT];
 };
 
+void execute(struct chip8* c8, unsigned short instruction);
 int initialize(struct chip8* c8, char* filepath);
 unsigned short fetch_decode(struct chip8* c8);
 
@@ -37,11 +38,13 @@ int main(int argc, char *argv[])
 	}
 	program_path = argv[1];
 	initialize(&c8, program_path);
+
 	while(1) {
 		instruction = fetch_decode(&c8);
-		if(instruction == -1) {
+		if(!instruction) {
 			break;
 		}
+        execute(&c8, instruction);
 	}
 	return 0;
 }
@@ -65,7 +68,7 @@ int initialize(struct chip8* c8, char* filepath)
 		exit(2);
 	}
 	mem = c8 -> memory;
-	bread = read(fd, mem, PROGRAM_SIZE);
+	bread = read(fd, mem + PROGRAM_START, PROGRAM_SIZE);
 	if(bread == -1) {
 		exit(3);
 	}
@@ -85,13 +88,22 @@ unsigned short fetch_decode(struct chip8* c8)
 	memory = c8 -> memory;
 
 	if(*pc == PROGRAM_END || memory[*pc] == '\0') {
-		return -1;
+		return 0;
 	}
 
-	two_bytes = (unsigned char*)&instruction;
+	two_bytes = (unsigned char*) &instruction;
 
 	for(int i = 0; i < 2; i++) {
-		two_bytes[i] = memory[*pc++];
+		two_bytes[i] = memory[*pc];
+        (*pc)++;
 	}
 	return instruction;
+}
+
+void execute(struct chip8* c8, unsigned short instruction)
+{
+    char jump[] = "this is a jump";
+    if (instruction ^ 0x6000) {
+        write(STDOUT_FILENO, jump, sizeof(jump));
+    }
 }
